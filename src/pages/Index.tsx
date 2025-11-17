@@ -146,9 +146,14 @@ const Index = () => {
           <div className="space-y-6 animate-fade-in-up">
             {/* Mood Card */}
             <Card className="p-8 shadow-float backdrop-blur-sm bg-card/90 border-2 border-border rounded-3xl">
-              <h2 className="text-3xl font-bold mb-4 text-center text-foreground">
-                Your Vibe: {result.moods.join(' + ')}
-              </h2>
+              <div className="flex items-center justify-center gap-4 mb-4">
+                <h2 className="text-3xl font-bold text-center text-foreground">
+                  Your Vibe: {result.moods.join(' + ')}
+                </h2>
+                <div className="text-5xl animate-bounce">
+                  <span className="inline-block animate-spin-slow">💃</span>
+                </div>
+              </div>
 
               {/* Emoji Display */}
               <div className="text-6xl text-center mb-4">
@@ -165,13 +170,6 @@ const Index = () => {
                 {result.combinedStory}
               </p>
             </Card>
-
-            {/* Goofy Dance Animation */}
-            <div className="text-center py-8">
-              <div className="inline-block text-8xl animate-bounce">
-                <span className="inline-block animate-spin-slow">🕺</span>
-              </div>
-            </div>
           </div>
         )}
 
