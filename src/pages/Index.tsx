@@ -246,7 +246,7 @@ const Index = () => {
                 className="h-14 px-8 text-lg rounded-2xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-soft hover:shadow-float transition-all hover:scale-105 gap-2"
               >
                 <Share2 className="w-5 h-5" />
-                Spread the Vibes ✨
+                Share Your Vibes ✨
                 <Download className="w-5 h-5" />
               </Button>
             </div>
