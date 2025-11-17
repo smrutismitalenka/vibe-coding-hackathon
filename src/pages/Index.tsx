@@ -6,9 +6,16 @@ import { moodMap, type EmojiMood } from '@/data/emojiDictionary';
 import { FloatingEmojis } from '@/components/FloatingEmojis';
 import { Sparkles } from 'lucide-react';
 
+interface CombinedResult {
+  moods: string[];
+  colors: string[];
+  combinedStory: string;
+  gradient: string;
+}
+
 const Index = () => {
   const [emojiInput, setEmojiInput] = useState('');
-  const [result, setResult] = useState<EmojiMood | null>(null);
+  const [result, setResult] = useState<CombinedResult | null>(null);
   const [displayEmojis, setDisplayEmojis] = useState<string[]>([]);
 
   const interpretEmojis = () => {
@@ -18,19 +25,54 @@ const Index = () => {
     const emojis = Array.from(emojiInput);
     setDisplayEmojis(emojis);
 
-    // Find first matching emoji in our dictionary
+    // Find ALL matching emojis in our dictionary
+    const matches: EmojiMood[] = [];
+    const uniqueEmojis = new Set<string>();
+    
     for (const emoji of emojis) {
-      if (moodMap[emoji]) {
-        setResult(moodMap[emoji]);
-        return;
+      if (moodMap[emoji] && !uniqueEmojis.has(emoji)) {
+        matches.push(moodMap[emoji]);
+        uniqueEmojis.add(emoji);
       }
     }
 
-    // If no match found, show default mood
+    if (matches.length === 0) {
+      // If no match found, show default mood
+      setResult({
+        moods: ['Mysterious Vibes'],
+        colors: ['#B794F6'],
+        combinedStory: "Your emojis speak a unique language! Sometimes the best vibes are the ones we create ourselves.",
+        gradient: 'linear-gradient(135deg, #B794F640 0%, #B794F620 100%)'
+      });
+      return;
+    }
+
+    // Combine all the moods
+    const moods = matches.map(m => m.mood);
+    const colors = matches.map(m => m.color);
+    
+    // Create a gradient from all colors
+    const gradientStops = colors.map((color, index) => {
+      const percent = (index / (colors.length - 1)) * 100;
+      return `${color}40 ${percent}%`;
+    }).join(', ');
+    const gradient = `linear-gradient(135deg, ${gradientStops})`;
+
+    // Create a combined story
+    let combinedStory = '';
+    if (matches.length === 1) {
+      combinedStory = matches[0].story;
+    } else {
+      const moodDescriptions = matches.map(m => m.mood.toLowerCase()).join(', ');
+      const storyFragments = matches.map(m => m.story).join(' ');
+      combinedStory = `You're feeling ${moodDescriptions} all at once! ${storyFragments}`;
+    }
+
     setResult({
-      mood: 'Mysterious Vibes',
-      color: '#B794F6',
-      story: 'Your emojis speak a unique language! Sometimes the best vibes are the ones we create ourselves.'
+      moods,
+      colors,
+      combinedStory,
+      gradient
     });
   };
 
@@ -43,7 +85,7 @@ const Index = () => {
   return (
     <div 
       className="min-h-screen transition-all duration-700 bg-gradient-default relative overflow-hidden"
-      style={result ? { background: `linear-gradient(135deg, ${result.color}40 0%, ${result.color}20 100%)` } : {}}
+      style={result ? { background: result.gradient } : {}}
     >
       <FloatingEmojis emojis={displayEmojis} />
       
@@ -88,16 +130,19 @@ const Index = () => {
             {/* Mood Card */}
             <Card className="p-8 shadow-float backdrop-blur-sm bg-card/90 border-2 border-border rounded-3xl">
               <h2 className="text-3xl font-bold mb-4 text-center text-foreground">
-                Your Vibe: {result.mood}
+                Your Vibe: {result.moods.join(' + ')}
               </h2>
               
               {/* Color Display */}
-              <div className="flex justify-center mb-6">
-                <div
-                  className="w-24 h-24 rounded-full shadow-soft hover:scale-110 transition-transform cursor-pointer"
-                  style={{ backgroundColor: result.color }}
-                  title={result.color}
-                />
+              <div className="flex justify-center gap-3 mb-6 flex-wrap">
+                {result.colors.map((color, index) => (
+                  <div
+                    key={index}
+                    className="w-20 h-20 rounded-full shadow-soft hover:scale-110 transition-transform cursor-pointer"
+                    style={{ backgroundColor: color }}
+                    title={color}
+                  />
+                ))}
               </div>
 
               {/* Emoji Display */}
@@ -112,7 +157,7 @@ const Index = () => {
                 Your Story 📖
               </h3>
               <p className="text-lg text-foreground/90 text-center leading-relaxed">
-                {result.story}
+                {result.combinedStory}
               </p>
             </Card>
           </div>
