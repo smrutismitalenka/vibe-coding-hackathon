@@ -118,7 +118,7 @@ const Index = () => {
                 onClick={interpretEmojis}
                 className="h-14 px-8 text-lg rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-soft hover:shadow-float transition-all hover:scale-105"
               >
-                Interpret ✨
+                Let's go
               </Button>
             </div>
             
