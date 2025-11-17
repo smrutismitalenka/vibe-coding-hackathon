@@ -25,13 +25,21 @@ const Index = () => {
     const saved = localStorage.getItem('vibeHistory');
     return saved ? JSON.parse(saved) : [];
   });
+  const [compareMode, setCompareMode] = useState(false);
+  const [emojiInput2, setEmojiInput2] = useState('');
+  const [result2, setResult2] = useState<CombinedResult | null>(null);
+  const [displayEmojis2, setDisplayEmojis2] = useState<string[]>([]);
 
-  const interpretEmojis = () => {
-    if (!emojiInput.trim()) return;
+  const interpretEmojis = (input: string = emojiInput, isSecondInput: boolean = false) => {
+    if (!input.trim()) return;
 
     // Split input into individual characters/emojis
-    const emojis = Array.from(emojiInput);
-    setDisplayEmojis(emojis);
+    const emojis = Array.from(input);
+    if (isSecondInput) {
+      setDisplayEmojis2(emojis);
+    } else {
+      setDisplayEmojis(emojis);
+    }
 
     // Find ALL matching emojis in our dictionary
     const matches: EmojiMood[] = [];
@@ -55,12 +63,18 @@ const Index = () => {
         timestamp: Date.now()
       };
       
-      setResult(newResult);
-      
-      // Save to history
-      const updatedHistory = [newResult, ...vibeHistory].slice(0, 10);
-      setVibeHistory(updatedHistory);
-      localStorage.setItem('vibeHistory', JSON.stringify(updatedHistory));
+      if (isSecondInput) {
+        setResult2(newResult);
+      } else {
+        setResult(newResult);
+        
+        // Only save to history for primary input
+        if (!compareMode) {
+          const updatedHistory = [newResult, ...vibeHistory].slice(0, 10);
+          setVibeHistory(updatedHistory);
+          localStorage.setItem('vibeHistory', JSON.stringify(updatedHistory));
+        }
+      }
       return;
     }
 
@@ -94,17 +108,37 @@ const Index = () => {
       timestamp: Date.now()
     };
 
-    setResult(newResult);
-    
-    // Save to history
-    const updatedHistory = [newResult, ...vibeHistory].slice(0, 10);
-    setVibeHistory(updatedHistory);
-    localStorage.setItem('vibeHistory', JSON.stringify(updatedHistory));
+    if (isSecondInput) {
+      setResult2(newResult);
+    } else {
+      setResult(newResult);
+      
+      // Only save to history for primary input (not in compare mode second input)
+      if (!compareMode) {
+        const updatedHistory = [newResult, ...vibeHistory].slice(0, 10);
+        setVibeHistory(updatedHistory);
+        localStorage.setItem('vibeHistory', JSON.stringify(updatedHistory));
+      }
+    }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e: React.KeyboardEvent, isSecondInput: boolean = false) => {
     if (e.key === 'Enter') {
-      interpretEmojis();
+      if (isSecondInput) {
+        interpretEmojis(emojiInput2, true);
+      } else {
+        interpretEmojis();
+      }
+    }
+  };
+
+  const handleCompareMode = () => {
+    setCompareMode(!compareMode);
+    if (!compareMode) {
+      // Entering compare mode - clear second input
+      setEmojiInput2('');
+      setResult2(null);
+      setDisplayEmojis2([]);
     }
   };
 
@@ -185,12 +219,98 @@ const Index = () => {
     });
   };
 
+  const renderVibeCard = (vibeResult: CombinedResult, emojis: string[], showShare: boolean = true) => (
+    <>
+      <Card className="p-8 shadow-float backdrop-blur-sm bg-card/90 border-2 border-border rounded-3xl">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <h2 className="text-3xl font-bold text-foreground">
+              {vibeResult.moods.join(' + ')}
+            </h2>
+            <div className="text-5xl">
+              <span className="inline-block">💃</span>
+            </div>
+          </div>
+          {showShare && (
+            <Button
+              onClick={shareVibe}
+              className="h-12 px-6 rounded-2xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-soft hover:shadow-float transition-all hover:scale-105 gap-2"
+            >
+              <Share2 className="w-4 h-4" />
+              Share ✨
+              <Download className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+        <div className="text-6xl text-center mb-4">
+          {emojis.slice(0, 5).join(' ')}
+        </div>
+      </Card>
+
+      <Card className="p-8 shadow-float backdrop-blur-sm bg-card/90 border-2 border-border rounded-3xl">
+        <h3 className="text-2xl font-bold mb-4 text-center text-foreground">
+          Story 📖
+        </h3>
+        <p className="text-lg text-foreground/90 text-center leading-relaxed">
+          {vibeResult.combinedStory}
+        </p>
+      </Card>
+
+      {(() => {
+        const products = getProductRecommendations(vibeResult.moods);
+        return products.length > 0 ? (
+          <Card className="p-8 shadow-float backdrop-blur-sm bg-card/90 border-2 border-border rounded-3xl">
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <ShoppingBag className="w-6 h-6 text-primary" />
+              <h3 className="text-2xl font-bold text-center text-foreground">
+                Perfect for Your Vibe 🛍️
+              </h3>
+            </div>
+            <p className="text-center text-foreground/70 mb-6">
+              Products that match your {vibeResult.moods.join(' + ')} energy
+            </p>
+            <div className="grid gap-4 md:grid-cols-3">
+              {products.map((product, index) => (
+                <a
+                  key={index}
+                  href={product.affiliateLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group p-6 rounded-2xl bg-background/50 hover:bg-background/80 border-2 border-border/50 hover:border-primary/50 transition-all hover:scale-[1.02] hover:shadow-float"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                      {product.category}
+                    </span>
+                    <ExternalLink className="w-4 h-4 text-foreground/50 group-hover:text-primary transition-colors" />
+                  </div>
+                  <h4 className="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                    {product.name}
+                  </h4>
+                  <p className="text-sm text-foreground/70">
+                    {product.description}
+                  </p>
+                  <div className="mt-4 text-sm font-semibold text-primary group-hover:underline">
+                    View Product →
+                  </div>
+                </a>
+              ))}
+            </div>
+            <p className="text-xs text-center text-foreground/50 mt-6">
+              Note: Replace affiliate links with your own to start earning commissions
+            </p>
+          </Card>
+        ) : null;
+      })()}
+    </>
+  );
+
   return (
     <div 
       className="min-h-screen transition-all duration-700 bg-gradient-default relative overflow-hidden"
-      style={result ? { background: result.gradient } : {}}
+      style={result && !compareMode ? { background: result.gradient } : {}}
     >
-      <FloatingEmojis emojis={displayEmojis} />
+      <FloatingEmojis emojis={compareMode ? [...displayEmojis, ...displayEmojis2] : displayEmojis} />
       
       <div className="relative z-10 container mx-auto px-4 py-12 max-w-4xl">
         {/* Hero Section */}
@@ -202,138 +322,109 @@ const Index = () => {
             </h1>
             <Sparkles className="w-8 h-8 text-primary" />
           </div>
-          <p className="text-xl text-foreground/80 mb-8">
+          <p className="text-xl text-foreground/80 mb-4">
             What's Your Vibe Today? ✨
           </p>
 
+          <div className="flex justify-center gap-4 mb-8">
+            <Button
+              onClick={handleCompareMode}
+              variant={compareMode ? "default" : "outline"}
+              className="rounded-2xl px-6 h-12 font-semibold transition-all hover:scale-105"
+            >
+              {compareMode ? "✓ Compare Mode" : "Compare Vibes"}
+            </Button>
+          </div>
+
           {/* Input Section */}
-          <Card className="p-6 shadow-soft backdrop-blur-sm bg-card/80 border-2 border-border">
-            <div className="flex gap-3 flex-col sm:flex-row">
-              <Input
-                type="text"
-                placeholder="Drop your emojis here... 😊✨🌈"
-                value={emojiInput}
-                onChange={(e) => setEmojiInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="text-2xl h-14 text-center rounded-2xl border-2 border-border focus:border-primary transition-colors"
-              />
-              <Button
-                onClick={interpretEmojis}
-                className="h-14 px-8 text-lg rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-soft hover:shadow-float transition-all hover:scale-105"
-              >
-                Let's go
-              </Button>
-            </div>
-            
-            {/* Emoji Picker */}
-            <div className="mt-6">
-              <p className="text-sm text-foreground/70 text-center mb-3">Or click to add emojis:</p>
-              <div className="flex flex-wrap justify-center gap-2">
-                {Object.keys(moodMap).map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => setEmojiInput(prev => prev + emoji)}
-                    className="text-4xl hover:scale-125 transition-transform cursor-pointer bg-background/50 hover:bg-background/80 rounded-xl p-2 border border-border/50 hover:border-primary/50"
-                    title={moodMap[emoji].mood}
-                  >
-                    {emoji}
-                  </button>
-                ))}
+          <div className={compareMode ? "grid md:grid-cols-2 gap-4" : ""}>
+            <Card className="p-6 shadow-soft backdrop-blur-sm bg-card/80 border-2 border-border">
+              {compareMode && (
+                <h3 className="text-lg font-bold text-foreground mb-4 text-center">Vibe 1</h3>
+              )}
+              <div className="flex gap-3 flex-col sm:flex-row">
+                <Input
+                  type="text"
+                  placeholder="Drop your emojis here... 😊✨🌈"
+                  value={emojiInput}
+                  onChange={(e) => setEmojiInput(e.target.value)}
+                  onKeyPress={(e) => handleKeyPress(e, false)}
+                  className="text-2xl h-14 text-center rounded-2xl border-2 border-border focus:border-primary transition-colors"
+                />
+                <Button
+                  onClick={() => interpretEmojis()}
+                  className="h-14 px-8 text-lg rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-soft hover:shadow-float transition-all hover:scale-105"
+                >
+                  Decode
+                </Button>
               </div>
-            </div>
-          </Card>
+            
+              {/* Emoji Picker */}
+              <div className="mt-6">
+                <p className="text-sm text-foreground/70 text-center mb-3">Or click to add emojis:</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {Object.keys(moodMap).map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => setEmojiInput(prev => prev + emoji)}
+                      className="text-4xl hover:scale-125 transition-transform cursor-pointer bg-background/50 hover:bg-background/80 rounded-xl p-2 border border-border/50 hover:border-primary/50"
+                      title={moodMap[emoji].mood}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </Card>
+
+            {compareMode && (
+              <Card className="p-6 shadow-soft backdrop-blur-sm bg-card/80 border-2 border-border">
+                <h3 className="text-lg font-bold text-foreground mb-4 text-center">Vibe 2</h3>
+                <div className="flex gap-3 flex-col sm:flex-row">
+                  <Input
+                    type="text"
+                    placeholder="Drop your emojis here... 🔥🚀💡"
+                    value={emojiInput2}
+                    onChange={(e) => setEmojiInput2(e.target.value)}
+                    onKeyPress={(e) => handleKeyPress(e, true)}
+                    className="text-2xl h-14 text-center rounded-2xl border-2 border-border focus:border-primary transition-colors"
+                  />
+                  <Button
+                    onClick={() => interpretEmojis(emojiInput2, true)}
+                    className="h-14 px-8 text-lg rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-soft hover:shadow-float transition-all hover:scale-105"
+                  >
+                    Decode
+                  </Button>
+                </div>
+                
+                {/* Emoji Picker */}
+                <div className="mt-6">
+                  <p className="text-sm text-foreground/70 text-center mb-3">Or click to add emojis:</p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {Object.keys(moodMap).map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => setEmojiInput2(prev => prev + emoji)}
+                        className="text-4xl hover:scale-125 transition-transform cursor-pointer bg-background/50 hover:bg-background/80 rounded-xl p-2 border border-border/50 hover:border-primary/50"
+                        title={moodMap[emoji].mood}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            )}
+          </div>
         </div>
 
         {/* Results Section */}
-        {result && (
+        {result && !compareMode && (
           <div className="space-y-6 animate-fade-in-up">
-            {/* Mood Card */}
-            <Card className="p-8 shadow-float backdrop-blur-sm bg-card/90 border-2 border-border rounded-3xl">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <h2 className="text-3xl font-bold text-foreground">
-                    Your Vibe: {result.moods.join(' + ')}
-                  </h2>
-                  <div className="text-5xl">
-                    <span className="inline-block">💃</span>
-                  </div>
-                </div>
-                <Button
-                  onClick={shareVibe}
-                  className="h-12 px-6 rounded-2xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-soft hover:shadow-float transition-all hover:scale-105 gap-2"
-                >
-                  <Share2 className="w-4 h-4" />
-                  Share Your Vibes ✨
-                  <Download className="w-4 h-4" />
-                </Button>
-              </div>
-
-              {/* Emoji Display */}
-              <div className="text-6xl text-center mb-4">
-                {displayEmojis.slice(0, 5).join(' ')}
-              </div>
-            </Card>
-
-            {/* Story Card */}
-            <Card className="p-8 shadow-float backdrop-blur-sm bg-card/90 border-2 border-border rounded-3xl">
-              <h3 className="text-2xl font-bold mb-4 text-center text-foreground">
-                Your Story 📖
-              </h3>
-              <p className="text-lg text-foreground/90 text-center leading-relaxed">
-                {result.combinedStory}
-              </p>
-            </Card>
-
-            {/* Product Recommendations */}
-            {(() => {
-              const products = getProductRecommendations(result.moods);
-              return products.length > 0 ? (
-                <Card className="p-8 shadow-float backdrop-blur-sm bg-card/90 border-2 border-border rounded-3xl">
-                  <div className="flex items-center justify-center gap-2 mb-6">
-                    <ShoppingBag className="w-6 h-6 text-primary" />
-                    <h3 className="text-2xl font-bold text-center text-foreground">
-                      Perfect for Your Vibe 🛍️
-                    </h3>
-                  </div>
-                  <p className="text-center text-foreground/70 mb-6">
-                    Products that match your {result.moods.join(' + ')} energy
-                  </p>
-                  <div className="grid gap-4 md:grid-cols-3">
-                    {products.map((product, index) => (
-                      <a
-                        key={index}
-                        href={product.affiliateLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group p-6 rounded-2xl bg-background/50 hover:bg-background/80 border-2 border-border/50 hover:border-primary/50 transition-all hover:scale-[1.02] hover:shadow-float"
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <span className="text-xs font-semibold text-primary uppercase tracking-wider">
-                            {product.category}
-                          </span>
-                          <ExternalLink className="w-4 h-4 text-foreground/50 group-hover:text-primary transition-colors" />
-                        </div>
-                        <h4 className="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
-                          {product.name}
-                        </h4>
-                        <p className="text-sm text-foreground/70">
-                          {product.description}
-                        </p>
-                        <div className="mt-4 text-sm font-semibold text-primary group-hover:underline">
-                          View Product →
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                  <p className="text-xs text-center text-foreground/50 mt-6">
-                    Note: Replace affiliate links with your own to start earning commissions
-                  </p>
-                </Card>
-              ) : null;
-            })()}
+            {renderVibeCard(result, displayEmojis, true)}
 
             {/* Vibe History */}
-            {vibeHistory.length > 0 && (
+            {vibeHistory.length > 0 && !compareMode && (
               <Card className="p-8 shadow-float backdrop-blur-sm bg-card/90 border-2 border-border rounded-3xl">
                 <h3 className="text-2xl font-bold mb-6 text-center text-foreground">
                   Your Vibe History 🕰️
@@ -362,6 +453,93 @@ const Index = () => {
                       </div>
                     </button>
                   ))}
+                </div>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {/* Comparison View */}
+        {compareMode && (result || result2) && (
+          <div className="space-y-6 animate-fade-in-up">
+            <Card className="p-6 shadow-float backdrop-blur-sm bg-card/90 border-2 border-border rounded-3xl">
+              <h2 className="text-3xl font-bold text-center text-foreground mb-4">
+                Vibe Comparison 🔄
+              </h2>
+              <p className="text-center text-foreground/70 mb-6">
+                See how different emoji combinations create unique vibes
+              </p>
+            </Card>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Vibe 1 */}
+              <div className="space-y-6">
+                {result ? (
+                  <>
+                    <div className="text-center">
+                      <h3 className="text-2xl font-bold text-foreground mb-2">Vibe 1</h3>
+                    </div>
+                    {renderVibeCard(result, displayEmojis, false)}
+                  </>
+                ) : (
+                  <Card className="p-12 shadow-float backdrop-blur-sm bg-card/90 border-2 border-border rounded-3xl">
+                    <div className="text-center">
+                      <div className="text-6xl mb-4">✨</div>
+                      <p className="text-lg text-foreground/70">
+                        Decode your first vibe above
+                      </p>
+                    </div>
+                  </Card>
+                )}
+              </div>
+
+              {/* Vibe 2 */}
+              <div className="space-y-6">
+                {result2 ? (
+                  <>
+                    <div className="text-center">
+                      <h3 className="text-2xl font-bold text-foreground mb-2">Vibe 2</h3>
+                    </div>
+                    {renderVibeCard(result2, displayEmojis2, false)}
+                  </>
+                ) : (
+                  <Card className="p-12 shadow-float backdrop-blur-sm bg-card/90 border-2 border-border rounded-3xl">
+                    <div className="text-center">
+                      <div className="text-6xl mb-4">🎭</div>
+                      <p className="text-lg text-foreground/70">
+                        Decode your second vibe above
+                      </p>
+                    </div>
+                  </Card>
+                )}
+              </div>
+            </div>
+
+            {/* Comparison Insights */}
+            {result && result2 && (
+              <Card className="p-8 shadow-float backdrop-blur-sm bg-card/90 border-2 border-border rounded-3xl">
+                <h3 className="text-2xl font-bold text-center text-foreground mb-6">
+                  Comparison Insights 💡
+                </h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="p-6 rounded-2xl bg-background/50 border border-border/50">
+                    <h4 className="font-bold text-lg text-foreground mb-3">Mood Difference</h4>
+                    <p className="text-foreground/80">
+                      <span className="font-semibold">Vibe 1:</span> {result.moods.join(', ')}
+                    </p>
+                    <p className="text-foreground/80 mt-2">
+                      <span className="font-semibold">Vibe 2:</span> {result2.moods.join(', ')}
+                    </p>
+                  </div>
+                  <div className="p-6 rounded-2xl bg-background/50 border border-border/50">
+                    <h4 className="font-bold text-lg text-foreground mb-3">Emoji Count</h4>
+                    <p className="text-foreground/80">
+                      <span className="font-semibold">Vibe 1:</span> {displayEmojis.length} emoji{displayEmojis.length !== 1 ? 's' : ''}
+                    </p>
+                    <p className="text-foreground/80 mt-2">
+                      <span className="font-semibold">Vibe 2:</span> {displayEmojis2.length} emoji{displayEmojis2.length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
                 </div>
               </Card>
             )}
