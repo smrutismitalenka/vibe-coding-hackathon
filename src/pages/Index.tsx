@@ -121,6 +121,23 @@ const Index = () => {
                 Interpret ✨
               </Button>
             </div>
+            
+            {/* Emoji Picker */}
+            <div className="mt-6">
+              <p className="text-sm text-foreground/70 text-center mb-3">Or click to add emojis:</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {Object.keys(moodMap).map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => setEmojiInput(prev => prev + emoji)}
+                    className="text-4xl hover:scale-125 transition-transform cursor-pointer bg-background/50 hover:bg-background/80 rounded-xl p-2 border border-border/50 hover:border-primary/50"
+                    title={moodMap[emoji].mood}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
           </Card>
         </div>
 
