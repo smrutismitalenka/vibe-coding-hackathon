@@ -177,6 +177,13 @@ const Index = () => {
                 {result.combinedStory}
               </p>
             </Card>
+
+            {/* Goofy Dance Animation */}
+            <div className="text-center py-8">
+              <div className="inline-block text-8xl animate-bounce">
+                <span className="inline-block animate-spin-slow">🕺</span>
+              </div>
+            </div>
           </div>
         )}
 
