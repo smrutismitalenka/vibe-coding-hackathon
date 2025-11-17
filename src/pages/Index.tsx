@@ -129,12 +129,6 @@ const Index = () => {
           </div>
         )}
 
-        {/* Footer */}
-        <footer className="text-center mt-16 text-foreground/60">
-          <p className="text-sm">
-            Built in 1 hour using vibe coding ✨
-          </p>
-        </footer>
       </div>
     </div>
   );
