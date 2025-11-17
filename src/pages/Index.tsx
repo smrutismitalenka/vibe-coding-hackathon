@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { moodMap, type EmojiMood } from '@/data/emojiDictionary';
 import { FloatingEmojis } from '@/components/FloatingEmojis';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Share2, Download } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface CombinedResult {
   moods: string[];
@@ -80,6 +81,83 @@ const Index = () => {
     if (e.key === 'Enter') {
       interpretEmojis();
     }
+  };
+
+  const shareVibe = async () => {
+    if (!result) return;
+
+    // Create a canvas to draw the vibe card
+    const canvas = document.createElement('canvas');
+    canvas.width = 1200;
+    canvas.height = 800;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Draw gradient background
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    result.colors.forEach((color, index) => {
+      gradient.addColorStop(index / (result.colors.length - 1), color);
+    });
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Add semi-transparent overlay for better text visibility
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.roundRect(100, 100, 1000, 600, 40);
+    ctx.fill();
+
+    // Draw emojis
+    ctx.font = 'bold 120px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(displayEmojis.slice(0, 5).join(' '), canvas.width / 2, 280);
+
+    // Draw mood text
+    ctx.font = 'bold 60px Arial';
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillText(result.moods.join(' + '), canvas.width / 2, 380);
+
+    // Draw story (wrap text)
+    ctx.font = '32px Arial';
+    ctx.fillStyle = '#4a4a4a';
+    const maxWidth = 900;
+    const lineHeight = 45;
+    const words = result.combinedStory.split(' ');
+    let line = '';
+    let y = 480;
+
+    for (let i = 0; i < words.length; i++) {
+      const testLine = line + words[i] + ' ';
+      const metrics = ctx.measureText(testLine);
+      if (metrics.width > maxWidth && i > 0) {
+        ctx.fillText(line, canvas.width / 2, y);
+        line = words[i] + ' ';
+        y += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line, canvas.width / 2, y);
+
+    // Add branding
+    ctx.font = 'bold 28px Arial';
+    ctx.fillStyle = '#8b5cf6';
+    ctx.fillText('✨ Vibe Decoder ✨', canvas.width / 2, y + 80);
+
+    // Convert to blob and download
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `my-vibe-${Date.now()}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Vibe Captured! 📸",
+        description: "Your vibe is ready to share with the world!",
+      });
+    });
   };
 
   return (
@@ -160,6 +238,18 @@ const Index = () => {
                 {displayEmojis.slice(0, 5).join(' ')}
               </div>
             </Card>
+
+            {/* Share Button */}
+            <div className="flex justify-center">
+              <Button
+                onClick={shareVibe}
+                className="h-14 px-8 text-lg rounded-2xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-soft hover:shadow-float transition-all hover:scale-105 gap-2"
+              >
+                <Share2 className="w-5 h-5" />
+                Spread the Vibes ✨
+                <Download className="w-5 h-5" />
+              </Button>
+            </div>
 
             {/* Story Card */}
             <Card className="p-8 shadow-float backdrop-blur-sm bg-card/90 border-2 border-border rounded-3xl">
