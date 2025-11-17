@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { moodMap, type EmojiMood } from '@/data/emojiDictionary';
+import { getProductRecommendations } from '@/data/productDictionary';
 import { FloatingEmojis } from '@/components/FloatingEmojis';
-import { Sparkles, Share2, Download } from 'lucide-react';
+import { Sparkles, Share2, Download, ExternalLink, ShoppingBag } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface CombinedResult {
@@ -282,6 +283,54 @@ const Index = () => {
                 {result.combinedStory}
               </p>
             </Card>
+
+            {/* Product Recommendations */}
+            {(() => {
+              const products = getProductRecommendations(result.moods);
+              return products.length > 0 ? (
+                <Card className="p-8 shadow-float backdrop-blur-sm bg-card/90 border-2 border-border rounded-3xl">
+                  <div className="flex items-center justify-center gap-2 mb-6">
+                    <ShoppingBag className="w-6 h-6 text-primary" />
+                    <h3 className="text-2xl font-bold text-center text-foreground">
+                      Perfect for Your Vibe 🛍️
+                    </h3>
+                  </div>
+                  <p className="text-center text-foreground/70 mb-6">
+                    Products that match your {result.moods.join(' + ')} energy
+                  </p>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    {products.map((product, index) => (
+                      <a
+                        key={index}
+                        href={product.affiliateLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group p-6 rounded-2xl bg-background/50 hover:bg-background/80 border-2 border-border/50 hover:border-primary/50 transition-all hover:scale-[1.02] hover:shadow-float"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                            {product.category}
+                          </span>
+                          <ExternalLink className="w-4 h-4 text-foreground/50 group-hover:text-primary transition-colors" />
+                        </div>
+                        <h4 className="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                          {product.name}
+                        </h4>
+                        <p className="text-sm text-foreground/70">
+                          {product.description}
+                        </p>
+                        <div className="mt-4 text-sm font-semibold text-primary group-hover:underline">
+                          View Product →
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                  <p className="text-xs text-center text-foreground/50 mt-6">
+                    Note: Replace affiliate links with your own to start earning commissions
+                  </p>
+                </Card>
+              ) : null;
+            })()}
 
             {/* Vibe History */}
             {vibeHistory.length > 0 && (
