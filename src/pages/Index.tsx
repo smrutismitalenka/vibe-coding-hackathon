@@ -149,18 +149,6 @@ const Index = () => {
               <h2 className="text-3xl font-bold mb-4 text-center text-foreground">
                 Your Vibe: {result.moods.join(' + ')}
               </h2>
-              
-              {/* Color Display */}
-              <div className="flex justify-center gap-3 mb-6 flex-wrap">
-                {result.colors.map((color, index) => (
-                  <div
-                    key={index}
-                    className="w-20 h-20 rounded-full shadow-soft hover:scale-110 transition-transform cursor-pointer"
-                    style={{ backgroundColor: color }}
-                    title={color}
-                  />
-                ))}
-              </div>
 
               {/* Emoji Display */}
               <div className="text-6xl text-center mb-4">
