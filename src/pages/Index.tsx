@@ -12,12 +12,18 @@ interface CombinedResult {
   colors: string[];
   combinedStory: string;
   gradient: string;
+  emojis: string[];
+  timestamp: number;
 }
 
 const Index = () => {
   const [emojiInput, setEmojiInput] = useState('');
   const [result, setResult] = useState<CombinedResult | null>(null);
   const [displayEmojis, setDisplayEmojis] = useState<string[]>([]);
+  const [vibeHistory, setVibeHistory] = useState<CombinedResult[]>(() => {
+    const saved = localStorage.getItem('vibeHistory');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   const interpretEmojis = () => {
     if (!emojiInput.trim()) return;
@@ -39,12 +45,21 @@ const Index = () => {
 
     if (matches.length === 0) {
       // If no match found, show default mood
-      setResult({
+      const newResult = {
         moods: ['Mysterious Vibes'],
         colors: ['#B794F6'],
         combinedStory: "Your emojis speak a unique language! Sometimes the best vibes are the ones we create ourselves.",
-        gradient: 'linear-gradient(135deg, #B794F640 0%, #B794F620 100%)'
-      });
+        gradient: 'linear-gradient(135deg, #B794F640 0%, #B794F620 100%)',
+        emojis,
+        timestamp: Date.now()
+      };
+      
+      setResult(newResult);
+      
+      // Save to history
+      const updatedHistory = [newResult, ...vibeHistory].slice(0, 10);
+      setVibeHistory(updatedHistory);
+      localStorage.setItem('vibeHistory', JSON.stringify(updatedHistory));
       return;
     }
 
@@ -69,12 +84,21 @@ const Index = () => {
       combinedStory = `You're feeling ${moodDescriptions} all at once! ${storyFragments}`;
     }
 
-    setResult({
+    const newResult = {
       moods,
       colors,
       combinedStory,
-      gradient
-    });
+      gradient,
+      emojis,
+      timestamp: Date.now()
+    };
+
+    setResult(newResult);
+    
+    // Save to history
+    const updatedHistory = [newResult, ...vibeHistory].slice(0, 10);
+    setVibeHistory(updatedHistory);
+    localStorage.setItem('vibeHistory', JSON.stringify(updatedHistory));
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -224,13 +248,23 @@ const Index = () => {
           <div className="space-y-6 animate-fade-in-up">
             {/* Mood Card */}
             <Card className="p-8 shadow-float backdrop-blur-sm bg-card/90 border-2 border-border rounded-3xl">
-              <div className="flex items-center justify-center gap-4 mb-4">
-                <h2 className="text-3xl font-bold text-center text-foreground">
-                  Your Vibe: {result.moods.join(' + ')}
-                </h2>
-                <div className="text-5xl">
-                  <span className="inline-block">💃</span>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-3xl font-bold text-foreground">
+                    Your Vibe: {result.moods.join(' + ')}
+                  </h2>
+                  <div className="text-5xl">
+                    <span className="inline-block">💃</span>
+                  </div>
                 </div>
+                <Button
+                  onClick={shareVibe}
+                  className="h-12 px-6 rounded-2xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-soft hover:shadow-float transition-all hover:scale-105 gap-2"
+                >
+                  <Share2 className="w-4 h-4" />
+                  Share Your Vibes ✨
+                  <Download className="w-4 h-4" />
+                </Button>
               </div>
 
               {/* Emoji Display */}
@@ -238,18 +272,6 @@ const Index = () => {
                 {displayEmojis.slice(0, 5).join(' ')}
               </div>
             </Card>
-
-            {/* Share Button */}
-            <div className="flex justify-center">
-              <Button
-                onClick={shareVibe}
-                className="h-14 px-8 text-lg rounded-2xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-semibold shadow-soft hover:shadow-float transition-all hover:scale-105 gap-2"
-              >
-                <Share2 className="w-5 h-5" />
-                Share Your Vibes ✨
-                <Download className="w-5 h-5" />
-              </Button>
-            </div>
 
             {/* Story Card */}
             <Card className="p-8 shadow-float backdrop-blur-sm bg-card/90 border-2 border-border rounded-3xl">
@@ -260,6 +282,40 @@ const Index = () => {
                 {result.combinedStory}
               </p>
             </Card>
+
+            {/* Vibe History */}
+            {vibeHistory.length > 0 && (
+              <Card className="p-8 shadow-float backdrop-blur-sm bg-card/90 border-2 border-border rounded-3xl">
+                <h3 className="text-2xl font-bold mb-6 text-center text-foreground">
+                  Your Vibe History 🕰️
+                </h3>
+                <div className="space-y-4">
+                  {vibeHistory.map((vibe, index) => (
+                    <button
+                      key={vibe.timestamp}
+                      onClick={() => {
+                        setResult(vibe);
+                        setDisplayEmojis(vibe.emojis);
+                        setEmojiInput(vibe.emojis.join(''));
+                      }}
+                      className="w-full p-4 rounded-2xl bg-background/50 hover:bg-background/80 border-2 border-border/50 hover:border-primary/50 transition-all hover:scale-[1.02] text-left"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 flex-1">
+                          <div className="text-3xl">{vibe.emojis.slice(0, 5).join(' ')}</div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-foreground">{vibe.moods.join(' + ')}</p>
+                            <p className="text-sm text-foreground/60">
+                              {new Date(vibe.timestamp).toLocaleDateString()} at {new Date(vibe.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </Card>
+            )}
           </div>
         )}
 
