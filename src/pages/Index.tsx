@@ -95,7 +95,7 @@ const Index = () => {
           <div className="inline-flex items-center gap-2 mb-4">
             <Sparkles className="w-8 h-8 text-primary" />
             <h1 className="text-5xl md:text-6xl font-bold text-foreground">
-              Emoji Interpreter
+              Vibe Decoder
             </h1>
             <Sparkles className="w-8 h-8 text-primary" />
           </div>
