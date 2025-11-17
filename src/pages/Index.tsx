@@ -150,8 +150,8 @@ const Index = () => {
                 <h2 className="text-3xl font-bold text-center text-foreground">
                   Your Vibe: {result.moods.join(' + ')}
                 </h2>
-                <div className="text-5xl animate-bounce">
-                  <span className="inline-block animate-spin-slow">💃</span>
+                <div className="text-5xl">
+                  <span className="inline-block">💃</span>
                 </div>
               </div>
 
