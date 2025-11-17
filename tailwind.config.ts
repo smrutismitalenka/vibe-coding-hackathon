@@ -114,6 +114,7 @@ export default {
         'float': 'float 3s ease-in-out infinite',
         'float-slow': 'float-slow 4s ease-in-out infinite',
         'fade-in-up': 'fade-in-up 0.6s ease-out',
+        'spin-slow': 'spin 3s linear infinite',
       },
     },
   },
