@@ -29,9 +29,8 @@ const Index = () => {
     // If no match found, show default mood
     setResult({
       mood: 'Mysterious Vibes',
-      colors: ['#B794F6', '#9B9ECE', '#7B8CDE'],
-      story: 'Your emojis speak a unique language! Sometimes the best vibes are the ones we create ourselves.',
-      gradient: 'gradient-mysterious'
+      color: '#B794F6',
+      story: 'Your emojis speak a unique language! Sometimes the best vibes are the ones we create ourselves.'
     });
   };
 
@@ -42,7 +41,10 @@ const Index = () => {
   };
 
   return (
-    <div className={`min-h-screen transition-all duration-700 ${result ? `bg-${result.gradient}` : 'bg-gradient-default'} relative overflow-hidden`}>
+    <div 
+      className="min-h-screen transition-all duration-700 bg-gradient-default relative overflow-hidden"
+      style={result ? { background: `linear-gradient(135deg, ${result.color}40 0%, ${result.color}20 100%)` } : {}}
+    >
       <FloatingEmojis emojis={displayEmojis} />
       
       <div className="relative z-10 container mx-auto px-4 py-12 max-w-4xl">
@@ -89,16 +91,13 @@ const Index = () => {
                 Your Vibe: {result.mood}
               </h2>
               
-              {/* Color Palette */}
-              <div className="flex justify-center gap-3 mb-6 flex-wrap">
-                {result.colors.map((color, idx) => (
-                  <div
-                    key={idx}
-                    className="w-16 h-16 rounded-full shadow-soft hover:scale-110 transition-transform cursor-pointer"
-                    style={{ backgroundColor: color }}
-                    title={color}
-                  />
-                ))}
+              {/* Color Display */}
+              <div className="flex justify-center mb-6">
+                <div
+                  className="w-24 h-24 rounded-full shadow-soft hover:scale-110 transition-transform cursor-pointer"
+                  style={{ backgroundColor: result.color }}
+                  title={result.color}
+                />
               </div>
 
               {/* Emoji Display */}
